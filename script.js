@@ -1,7 +1,9 @@
+// Load Main UI
 window.onload = function() {
   loadCC('masterDiv');
 }
 
+// Main UI
 let cc = [];
 
 /* Sample
@@ -71,6 +73,7 @@ function loadCC(masterDiv) {
   `;
 }
 
+// Main UI Actions (add, clear, edit(3), del)
 function selectCC(masterDiv) {
   let typesCC = '';
 
@@ -96,17 +99,145 @@ function selectCC(masterDiv) {
     </div>
   `;
 }
-
-
 function del(i, masterDiv) {
   if (i === 1) {
     cc = [];
     loadCC(`${masterDiv}`);
   }
-
 }
-function editCC(i) {
+function editCC(i, masterDiv) {
+  // Retrieve the saved data for this entry.
+  // Each cc entry is structured as: [headerArray, valueArray]
+  let savedHeader = cc[i][0]; // e.g., ["Check", ...] or ["Traumatic", ...]
+  let savedValues = cc[i][1];
 
+  // First, try to find a matching non-emergency category in ccComponents.
+  let categoryIndex = ccComponents.findIndex(component => component[0] === savedHeader[0]);
+
+  if (categoryIndex !== -1) {
+    // Build the editing form for a non-emergency entry.
+    let ccComponentsList = '';
+    for (let j = 0; j < ccComponents[categoryIndex].length; j++) {
+      if (j === 0) {
+        ccComponentsList += `
+          <div class="cc-component" id="ccComponents">
+            <div class="logSubDiv">
+              <h1>${ccComponents[categoryIndex][j]}</h1>
+              <button class="rectButtonShort blackButton" onclick="selectCC('${masterDiv}')">
+                <p>Back</p>
+              </button>
+            </div>
+            <div>
+        `;
+      } else {
+        let savedValue = savedValues[j] ? savedValues[j] : "";
+        ccComponentsList += `
+          <div>
+            <label>${ccComponents[categoryIndex][j]}: </label>
+            <input id="ccComponentsInput${j}" value="${savedValue}">
+          </div>
+        `;
+      }
+    }
+    ccComponentsList += `
+            </div>
+            <div>
+              <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccComponents')">
+                <p>Clear</p>
+              </button>
+              <button class="rectButtonShort redButton" onclick="updateCCComponents(${i}, ${categoryIndex}, '${masterDiv}')">
+                <p>Update</p>
+              </button>
+            </div>
+          </div>
+    `;
+    document.getElementById(masterDiv).innerHTML = ccComponentsList;
+  } else {
+    // If not found in ccComponents, try to find it in ccEmergency.
+    let emergencyIndex = ccEmergency.findIndex(em => em[0] === savedHeader[0]);
+    if (emergencyIndex !== -1) {
+      // Build the editing form for an emergency entry.
+      let emergencyComponentsList = '';
+      for (let j = 0; j < ccEmergency[emergencyIndex].length; j++) {
+        if (j === 0) {
+          emergencyComponentsList += `
+            <div class="cc-component" id="ccEmergency">
+              <div class="logSubDiv">
+                <h1>${ccEmergency[emergencyIndex][j]}</h1>
+                <button class="rectButtonShort blackButton" onclick="loadCCAdder('${masterDiv}')">
+                  <p>Back</p>
+                </button>
+              </div>
+              <div>
+          `;
+        } else {
+          let savedVal = savedValues[j] ? savedValues[j] : "";
+          emergencyComponentsList += `
+            <div>
+              <label>${ccEmergency[emergencyIndex][j]}: </label>
+              <textarea id="ccEmergencyTextarea${j}">${savedVal}</textarea>
+            </div>
+          `;
+        }
+      }
+      emergencyComponentsList += `
+              </div>
+              <div>
+                <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccEmergency')">
+                  <p>Clear</p>
+                </button>
+                <button class="rectButtonShort redButton" onclick="updateCCEmergencyComponents(${i}, ${emergencyIndex}, '${masterDiv}')">
+                  <p>Update</p>
+                </button>
+              </div>
+            </div>
+      `;
+      document.getElementById(masterDiv).innerHTML = emergencyComponentsList;
+    } else {
+      console.error("Category not found for editing.");
+    }
+  }
+}
+function updateCCComponents(i, categoryIndex, masterDiv) {
+  let updatedValues = [];
+  
+  // We expect the same number of inputs as there were fields (plus an empty placeholder at index 0)
+  for (let j = 0; j < ccComponents[categoryIndex].length + 1; j++) {
+    if (j === 0) {
+      updatedValues.push("");
+    } else {
+      let inputElement = document.getElementById(`ccComponentsInput${j}`);
+      updatedValues.push(inputElement ? inputElement.value : "");
+    }
+  }
+  
+  // Update the saved values in cc array
+  cc[i][1] = updatedValues;
+  
+  // Reload the chief complaint log to reflect the changes
+  loadCC(masterDiv);
+}
+function updateCCEmergencyComponents(i, emergencyIndex, masterDiv) {
+  let updatedValues = [];
+  
+  // Expect the same number of inputs as emergency fields (plus a placeholder at index 0)
+  for (let j = 0; j < ccEmergency[emergencyIndex].length + 1; j++) {
+    if (j === 0) {
+      updatedValues.push(""); // placeholder if needed
+    } else {
+      let textarea = document.getElementById(`ccEmergencyTextarea${j}`);
+      updatedValues.push(textarea ? textarea.value : "");
+    }
+  }
+  
+  // Update the cc array with the new values
+  cc[i][1] = updatedValues;
+  
+  // Remove the emergency editing div if it exists and reload the log
+  if (document.getElementById('ccEmergency')) {
+    document.getElementById('ccEmergency').remove();
+  }
+  loadCC(masterDiv);
 }
 function removeCC(i, masterDiv) {
   document.getElementById(`logCC${i}`).remove();
@@ -114,8 +245,8 @@ function removeCC(i, masterDiv) {
   loadCC(masterDiv);
 }
 
-// CC Components
 
+// CC Components (input, clear)
 const ccComponents = [
   ['Check', 'reason', 'site', 'since', 'associated', 'severity'],
   ['Pain', 'site', 'onset', 'characteristics', 'radiating', 'associated', 'timing', 'modifier', 'severity'],
@@ -124,7 +255,6 @@ const ccComponents = [
   ['Emergency'],
   ['Referred', 'referred from', 'date & time of referral', 'reason']
 ]
-
 function loadCCAdder(masterDiv, i) {
   if (i === 4) {
     let ccEmergency = '';
@@ -143,7 +273,7 @@ function loadCCAdder(masterDiv, i) {
       <div id='ccComponents'>
         <div class="logSubDiv">
           <h1>Select the type of emergency: </h1>
-          <button class="rectButtonShort blackButton" onclick="backCCSelect('${masterDiv}')"><p>Back</p></button>
+          <button class="rectButtonShort blackButton" onclick="selectCC('${masterDiv}')"><p>Back</p></button>
         </div>
         <div class="gridContainer">
           ${ccEmergency}
@@ -156,7 +286,7 @@ function loadCCAdder(masterDiv, i) {
 
     for (let j = 0; j < ccComponents[i].length; j++) {
       if (j === 0) {
-        ccComponentsList += `<div class="cc-component" id="ccComponents"><div class="logSubDiv"><h1>${ccComponents[i][j]}</h1><button class="rectButtonShort blackButton" onclick="backCCSelect('${masterDiv}')"><p>Back</p></button></div><div>`;
+        ccComponentsList += `<div class="cc-component" id="ccComponents"><div class="logSubDiv"><h1>${ccComponents[i][j]}</h1><button class="rectButtonShort blackButton" onclick="selectCC('${masterDiv}')"><p>Back</p></button></div><div>`;
       } else {
         ccComponentsList += `<div><label>${ccComponents[i][j]}: </label><input id="ccComponentsInput${j}"></div>`;
       }
@@ -169,19 +299,12 @@ function loadCCAdder(masterDiv, i) {
     `;
   }
 }
-
-function backCCSelect(masterDiv) {
-  document.getElementById('ccComponents').remove();
-  selectCC(masterDiv);
-}
-
 function clearCCComponents(divId) {
   let div = document.getElementById(divId);
   if (div) {
     div.querySelectorAll("input, textarea").forEach(element => element.value = "");
   }
 }
-
 function saveCCComponents(i, masterDiv) {
   let saveCC = [];
   saveCC.push(ccComponents[i]);
@@ -204,19 +327,19 @@ function saveCCComponents(i, masterDiv) {
   loadCC(`${masterDiv}`);
 }
 
+// CC Components (EMERGENCY)
 const ccEmergency = [
   ['Traumatic', 'type of trauma', 'location of trauma', 'date & time of trauma', 'patient role (pre-mechanism)', 'known mechanism of trauma', 'unknown mechanism of trauma', 'impact details (post-mechanism)', 'source of story', 'patient symptoms', 'treatment given on-site'],
   ['Chemical'],
   ['Biological'],
   ['Previously Treated']
 ];
-
 function loadCCEmergency(masterDiv, i) {
   let ccEmergencyList = '';
 
   for (let j = 0; j < ccEmergency[i].length; j++) {
     if (j === 0) {
-      ccEmergencyList += `<div class="cc-component" id="ccEmergency"><div class="logSubDiv"><h1>${ccEmergency[i][j]}</h1><button class="rectButtonShort blackButton" onclick="backCCEmergency('${masterDiv}')"><p>Back</p></button></div><div>`;
+      ccEmergencyList += `<div class="cc-component" id="ccEmergency"><div class="logSubDiv"><h1>${ccEmergency[i][j]}</h1><button class="rectButtonShort blackButton" onclick="loadCCAdder('${masterDiv}', 4)"><p>Back</p></button></div><div>`;
     } else {
       ccEmergencyList += `<div><label>${ccEmergency[i][j]}</label><textarea id="ccEmergencyTextarea${j}"></textarea></div>`;
     }
@@ -226,12 +349,6 @@ function loadCCEmergency(masterDiv, i) {
 
   document.getElementById(`${masterDiv}`).innerHTML = `${ccEmergencyList}`;
 }
-
-function backCCEmergency(masterDiv) {
-  document.getElementById('ccEmergency').remove();
-  loadCCAdder(`${masterDiv}`, 4);
-}
-
 function saveCCEmergencyComponents(i, masterDiv) {
   let saveCC = [];
   saveCC.push(ccEmergency[i]);
