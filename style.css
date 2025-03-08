@@ -1,0 +1,189 @@
+html, body{
+  margin: 0;
+  font-family: "Outfit", sans-serif;
+}
+
+body{
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+h1 {
+  font-weight: 400;
+  margin-right: 10px;
+}
+
+button, select, input, textarea{
+  font-family: "Outfit", sans-serif;
+}
+select, input, textarea{
+  font-family: 'Outfit', sans-serif;
+  font-size: 12pt;
+  height: fit-content;
+  padding: 10px;
+  border-radius: 16px;
+  border: none;
+  box-shadow: 4px 4px 8px 1px rgba(0,0,0,0.6);
+  background-color: white;
+}
+select:focus, input:focus, textarea:focus{
+  outline: none;
+}
+select{
+  -webkit-appearance: none; /* Remove default appearance */
+  -moz-appearance: none; /* Remove default appearance in Firefox */
+  appearance: none; /* Standard property */
+  padding-right: 10px;
+  text-align: left;
+}
+input{
+  background-color: #404040;
+  color: white;
+}
+textarea{
+  background-color: #404040;
+  color: white;
+}
+button{
+  border: none;
+  box-shadow: 4px 4px 8px 1px rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  will-change: transform;
+}
+button:hover{
+  transform: translateY(-5px);
+  box-shadow: 6px 6px 8px 1px rgba(0,0,0,0.6);
+}
+button:active{
+  box-shadow: none;
+  background-color: #E6E6E6;
+  transform: translateY(0px);
+}
+
+.rectButtonLong{
+  border-radius: 16px;
+}
+.rectButtonLong p{
+  font-size: 14pt;
+  margin: 10px 40px;
+}
+.rectButtonShort{
+  border-radius: 16px;
+}
+.rectButtonShort p{
+  margin: 10px;
+  font-size: 12pt;
+}
+.rectButtonShort:hover{
+  transform: translateY(-3px);
+  box-shadow: 5px 5px 8px 1px rgba(0,0,0,0.6);
+}
+
+.roundButton{
+  margin: 0 10px;
+  border-radius: 40px;
+}
+.roundButton:active{
+  box-shadow: none;
+}
+.rBLarge{
+  width: 80px;
+  height: 80px;
+}
+.rBRegular{
+  width: 60px;
+  height: 60px;
+}
+.rBSmall{
+  width: 40px;
+  height: 40px;
+  box-shadow: none;
+}
+.rBSmall:hover{
+  box-shadow: 4px 4px 8px 1px rgba(0,0,0,0.6);
+}
+.rBSmall:active{
+  box-shadow: none;
+}
+
+.whiteButton{
+  background-color: white;
+  color: black;
+}
+.whiteButton:hover{
+  background-color: #E6E6E6;
+  color: black;
+}
+.blackButton{
+  background-color: #404040;
+  color: white;
+}
+.blackButton:active{
+  background-color: #404040;
+}
+.redButton{
+  background-color: #FE615A;
+  color: white;
+}
+.redButton:active{
+  background-color: #FE615A;
+}
+
+#masterDiv{
+  background-color: white;
+  min-width: 95vw;
+  min-height: 75vh;
+  width: fit-content;
+  height: fit-content;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  border: none;
+  box-shadow: 4px 4px 8px 1px rgba(0,0,0,0.6);
+  gap: 10px;
+  padding: 10px;
+}
+.logDiv {
+  flex: 1;
+  min-width: 590px;
+  width: fit-content;
+  max-width: 90vw;
+  max-height: 60vh;
+  box-shadow: 4px 4px 8px 2px rgba(0, 0, 0, 0.6);
+  overflow-y: auto; 
+  padding: 10px;  
+  border-radius: 20px; 
+}
+.logSubDiv{
+  margin-bottom: 10px;
+  width: calc(100% - 10px);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  height: fit-content;
+  padding-left: 10px;
+}
+.logSubDiv p{
+  flex: 10;
+  font-size: 14pt;
+}
+#selectCC, #ccComponents {
+  /* Make #selectCC fill space if #masterDiv is a flex container */
+                 
+  display: flex;
+  flex-direction: column;
+}
+.gridContainer {
+  height: 100%;      
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  grid-gap: 10px;  
+}
