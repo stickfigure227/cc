@@ -75,29 +75,14 @@ function loadCC(masterDiv) {
 
 // Main UI Actions (add, clear, edit(3), del)
 function selectCC(masterDiv) {
-  let typesCC = '';
-
   const contentCC = ['Check', 'Pain', 'Requesting Treatment', 'Purchase of Goods', 'Emergency', 'Referred'];
-
-  for (let i = 0; i < contentCC.length; i++) {
-    typesCC += `
-      <button class="rectButtonLong whiteButton" onclick="loadCCAdder('${masterDiv}',${i})"><p>
-        ${contentCC[i]}
-      </p></button>
-    `;
-  }
-  
-  document.getElementById(`${masterDiv}`).innerHTML = `
-    <div id='selectCC'>
-      <div class="logSubDiv">
-        <h1>Select the type of complaint: </h1>
-        <button class="rectButtonShort blackButton" onclick="loadCC('${masterDiv}')"><p>Back</p></button>
-      </div>
-      <div class="gridContainer">
-        ${typesCC}
-      </div>
-    </div>
-  `;
+  buildSelectionScreen(
+    masterDiv,
+    "Select the type of complaint:",
+    "loadCC('" + masterDiv + "')", // back callback
+    contentCC,
+    (index) => `loadCCAdder('${masterDiv}', ${index})`
+  );
 }
 function del(i, masterDiv) {
   if (i === 1) {
@@ -228,74 +213,37 @@ const ccComponents = [
 ]
 function loadCCAdder(masterDiv, i) {
   if (i === 4) {
-    let ccEmergency = '';
-
-    const emergency = ['Traumatic', 'Chemical', 'Biological', 'Previously Treated'];
-  
-    for (let j = 0; j < emergency.length; j++) {
-      ccEmergency += `
-        <button class="rectButtonLong whiteButton" onclick="loadCCEmergency('${masterDiv}',${j})"><p>
-          ${emergency[j]}
-        </p></button>
-      `;
-    }
-    
-    document.getElementById(`${masterDiv}`).innerHTML = `
-      <div id='ccComponents'>
-        <div class="logSubDiv">
-          <h1>Select the type of emergency: </h1>
-          <button class="rectButtonShort blackButton" onclick="selectCC('${masterDiv}')"><p>Back</p></button>
+    showEmergencySelection(masterDiv);
+  } else {
+    let headerHTML = generateHeader(`${ccComponents[i][0]}`, `selectCC('${masterDiv}')`);
+    let fieldsHTML = buildFormFields(ccComponents[i], [], 'input', 'ccComponents');
+    let footerHTML = `
         </div>
-        <div class="gridContainer">
-          ${ccEmergency}
+        <div>
+          <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccComponents')"><p>Clear</p></button>
+          <button class="rectButtonShort redButton" onclick="saveCCUnified(${i}, '${masterDiv}', 'input', ccComponents[${i}], 'ccComponents')"><p>Save</p></button>
         </div>
       </div>
     `;
-
-  } else {
-    let ccComponentsList = '';
-
-    for (let j = 0; j < ccComponents[i].length; j++) {
-      if (j === 0) {
-        ccComponentsList += generateHeader(`${ccComponents[i][j]}`, `selectCC('${masterDiv}')`);
-      } else {
-        ccComponentsList += `<div><label>${ccComponents[i][j]}: </label><input id="ccComponentsInput${j}"></div>`;
-      }
-    }
-
-    ccComponentsList += `</div><div class=""><button class="rectButtonShort blackButton" onclick="clearCCComponents('ccComponents')"><p>Clear</p></button><button class="rectButtonShort redButton" onclick="saveCCComponents(${i}, '${masterDiv}')"><p>Save</p></button></div></div>`;
-
-    document.getElementById(`${masterDiv}`).innerHTML = `
-      ${ccComponentsList}
-    `;
+    document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
   }
 }
+function showEmergencySelection(masterDiv) {
+  const emergency = ['Traumatic', 'Chemical', 'Biological', 'Previously Treated'];
+  buildSelectionScreen(
+    masterDiv,
+    "Select the type of emergency:",
+    "selectCC('" + masterDiv + "')", // back callback
+    emergency,
+    (index) => `loadCCEmergency('${masterDiv}', ${index})`
+  );
+}
+
 function clearCCComponents(divId) {
   let div = document.getElementById(divId);
   if (div) {
     div.querySelectorAll("input, textarea").forEach(element => element.value = "");
   }
-}
-function saveCCComponents(i, masterDiv) {
-  let saveCC = [];
-  saveCC.push(ccComponents[i]);
-  let temporaryArray = [];
-  for (let j = 0; j < ccComponents[i].length + 1; j++) {
-    if (j === 0) {
-      temporaryArray.push("");
-    } else {
-      if (document.getElementById(`ccComponentsInput${j}`)) {
-
-        temporaryArray.push(document.getElementById(`ccComponentsInput${j}`).value);
-      }
-    }
-  }
-  saveCC.push(temporaryArray);
-  cc.push(saveCC);
-  if (document.getElementById('ccComponents')) {
-    document.getElementById('ccComponents').remove();
-  }
-  loadCC(`${masterDiv}`);
 }
 
 // CC Components (EMERGENCY)
@@ -306,40 +254,17 @@ const ccEmergency = [
   ['Previously Treated']
 ];
 function loadCCEmergency(masterDiv, i) {
-  let ccEmergencyList = '';
-
-  for (let j = 0; j < ccEmergency[i].length; j++) {
-    if (j === 0) {
-      ccEmergencyList += generateHeader(`${ccEmergency[i][j]}`, `loadCCAdder('${masterDiv}', 4)`);
-    } else {
-      ccEmergencyList += `<div><label>${ccEmergency[i][j]}</label><textarea id="ccEmergencyTextarea${j}"></textarea></div>`;
-    }
-  }
-
-  ccEmergencyList += `</div><div><button class="rectButtonShort blackButton" onclick="clearCCComponents('ccEmergency')"><p>Clear</p></button><button class="rectButtonShort redButton" onclick="saveCCEmergencyComponents(${i}, '${masterDiv}')"><p>Save</p></button></div></div>`;
-
-  document.getElementById(`${masterDiv}`).innerHTML = `${ccEmergencyList}`;
-}
-function saveCCEmergencyComponents(i, masterDiv) {
-  let saveCC = [];
-  saveCC.push(ccEmergency[i]);
-  let temporaryArray = [];
-  for (let j = 0; j < ccEmergency[i].length + 1; j++) {
-    if (j === 0) {
-      temporaryArray.push("");
-    } else {
-      if (document.getElementById(`ccEmergencyTextarea${j}`)) {
-
-        temporaryArray.push(document.getElementById(`ccEmergencyTextarea${j}`).value);
-      }
-    }
-  }
-  saveCC.push(temporaryArray);
-  cc.push(saveCC);
-  if (document.getElementById('ccEmergency')) {
-    document.getElementById('ccEmergency').remove();
-  }
-  loadCC(`${masterDiv}`);
+  let headerHTML = generateHeader(`${ccEmergency[i][0]}`, `loadCCAdder('${masterDiv}', 4)`);
+  let fieldsHTML = buildFormFields(ccEmergency[i], [], 'textarea', 'ccEmergency');
+  let footerHTML = `
+      </div>
+      <div>
+        <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccEmergency')"><p>Clear</p></button>
+        <button class="rectButtonShort redButton" onclick="saveCCUnified(${i}, '${masterDiv}', 'textarea', ccEmergency[${i}], 'ccEmergency')"><p>Save</p></button>
+      </div>
+    </div>
+  `;
+  document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
 }
 
 // Global Fx
@@ -354,4 +279,105 @@ function generateHeader(title, backCallback) {
     </div>
     <div>
   `;
+}
+function saveCCUnified(i, masterDiv, elementType, fieldsArray, containerId) {
+  let saveCC = [];
+  saveCC.push(fieldsArray); // Save the header (field names)
+  let temporaryArray = [];
+  
+  // Loop over fields, plus one extra slot for a placeholder at index 0.
+  for (let j = 0; j < fieldsArray.length + 1; j++) {
+    if (j === 0) {
+      temporaryArray.push("");
+    } else {
+      let element;
+      if (elementType === 'input') {
+        element = document.getElementById(`${containerId}Input${j}`);
+      } else if (elementType === 'textarea') {
+        element = document.getElementById(`${containerId}Textarea${j}`);
+      }
+      temporaryArray.push(element ? element.value : "");
+    }
+  }
+  
+  saveCC.push(temporaryArray);
+  cc.push(saveCC);
+  
+  // Remove the container element after saving.
+  let container = document.getElementById(containerId);
+  if (container) container.remove();
+  
+  // Reload the main UI.
+  loadCC(masterDiv);
+}
+function buildFormFields(fieldsArray, savedValues, elementType, containerId) {
+  let fieldsHTML = "";
+  
+  // Loop through each field (skipping index 0, which is the header)
+  for (let j = 1; j < fieldsArray.length; j++) {
+    let fieldLabel = fieldsArray[j];
+    let savedVal = savedValues && savedValues[j] ? savedValues[j] : "";
+    
+    if (elementType === 'input') {
+      fieldsHTML += `
+        <div>
+          <label>${fieldLabel}: </label>
+          <input id="${containerId}Input${j}" value="${savedVal}">
+        </div>
+      `;
+    } else if (elementType === 'textarea') {
+      fieldsHTML += `
+        <div>
+          <label>${fieldLabel}: </label>
+          <textarea id="${containerId}Textarea${j}">${savedVal}</textarea>
+        </div>
+      `;
+    }
+  }
+  
+  return fieldsHTML;
+}
+/**
+ * Builds a selection screen with a header and a grid of buttons.
+ * @param {string} masterDiv - The ID of the master container.
+ * @param {string} title - The header title.
+ * @param {string} backCallback - The JavaScript callback for the Back button.
+ * @param {Array} buttonLabels - An array of labels for the buttons.
+ * @param {Function} buttonCallback - A function to call for each button click.
+ *        The callback receives the index (and you can capture masterDiv if needed).
+*/
+function buildSelectionScreen(masterDiv, title, backCallback, buttonLabels, buttonCallback) {
+  // Generate header with back button.
+  let headerHTML = `
+    <div class="logSubDiv">
+      <h1>${title}</h1>
+      <button class="rectButtonShort blackButton" onclick="${backCallback}">
+        <p>Back</p>
+      </button>
+    </div>
+  `;
+  
+  // Generate the grid of buttons using map and join.
+  let buttonsHTML = buttonLabels.map((label, index) => {
+    // Use the buttonCallback to generate the onclick attribute.
+    // For example, if buttonCallback returns a string like: "loadCCAdder('masterDiv', 2)"
+    return `
+      <button class="rectButtonLong whiteButton" onclick="${buttonCallback(index)}">
+        <p>${label}</p>
+      </button>
+    `;
+  }).join('');
+  
+  // Wrap the buttons in a grid container.
+  let gridHTML = `<div class="gridContainer">${buttonsHTML}</div>`;
+  
+  // Combine everything.
+  let fullHTML = `
+    <div id='ccComponents'>
+      ${headerHTML}
+      ${gridHTML}
+    </div>
+  `;
+  
+  document.getElementById(masterDiv).innerHTML = fullHTML;
 }
