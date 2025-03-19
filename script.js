@@ -27,7 +27,7 @@ function loadCC(masterDiv) {
     <h1 id="h1-1", onclick="void(0)">Chief Complaint</h1>
     <div>
       <button class="rectButtonShort blackButton" id="clear-1" onclick="del(1, '${masterDiv}')"><p>Clear</p></button>
-      <button class="rectButtonShort blackButton" id="add-1" onclick="selectCC('${masterDiv}')"><p>Add</p></button>
+      <button class="rectButtonShort blackButton" id="add-1" onclick="unifiedLoadCC('${masterDiv}','','0')"><p>Add</p></button>
     </div>
   `;
 
@@ -72,18 +72,7 @@ function loadCC(masterDiv) {
     </div>
   `;
 }
-
-// Main UI Actions (add, clear, edit(3), del)
-function selectCC(masterDiv) {
-  const contentCC = ['Check', 'Pain', 'Requesting Treatment', 'Purchase of Goods', 'Emergency', 'Referred'];
-  buildSelectionScreen(
-    masterDiv,
-    "Select the type of complaint:",
-    "loadCC('" + masterDiv + "')", // back callback
-    contentCC,
-    (index) => `loadCCAdder('${masterDiv}', ${index})`
-  );
-}
+ 
 function del(i, masterDiv) {
   if (i === 1) {
     cc = [];
@@ -201,70 +190,120 @@ function removeCC(i, masterDiv) {
   loadCC(masterDiv);
 }
 
-
 // CC Components (input, clear)
-const ccComponents = [
-  ['Check', 'reason', 'site', 'since', 'associated', 'severity'],
-  ['Pain', 'site', 'onset', 'characteristics', 'radiating', 'associated', 'timing', 'modifier', 'severity'],
-  ['Requesting Treatment', 'treatment type', 'site', 'reason'],
-  ['Purchase of Goods', 'name of goods', 'quantity', 'reason'],
-  ['Emergency'],
-  ['Referred', 'referred from', 'date & time of referral', 'reason']
-]
-function loadCCAdder(masterDiv, i) {
-  if (i === 4) {
-    showEmergencySelection(masterDiv);
-  } else {
-    let headerHTML = generateHeader(`${ccComponents[i][0]}`, `selectCC('${masterDiv}')`);
-    let fieldsHTML = buildFormFields(ccComponents[i], [], 'input', 'ccComponents');
-    let footerHTML = `
-        </div>
-        <div>
-          <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccComponents')"><p>Clear</p></button>
-          <button class="rectButtonShort redButton" onclick="saveCCUnified(${i}, '${masterDiv}', 'input', ccComponents[${i}], 'ccComponents')"><p>Save</p></button>
-        </div>
-      </div>
-    `;
-    document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
+const ccTypes = [
+  { 
+    type: 'Chief Complaint',
+    subtypes: [
+      { type: 'Check', fields: ['reason', 'site', 'since', 'associated', 'severity'] },
+      { type: 'Pain', fields: ['site', 'onset', 'characteristics', 'radiating', 'associated', 'timing', 'modifier', 'severity'] },
+      { type: 'Requesting Treatment', fields: ['treatment type', 'site', 'reason'] },
+      { type: 'Purchase of Goods', fields: ['name of goods', 'quantity', 'reason'] },
+      { 
+        type: 'Emergency',
+        subtypes: [
+          { type: 'Traumatic', fields: ['type of trauma', 'location of trauma', 'date & time of trauma', 'patient role (pre-mechanism)', 'mechanism of trauma', 'impact details (post-mechanism)', 'source of story', 'patient symptoms', 'treatment given on-site'] },
+          { type: 'Chemical', fields: ['type of chemical', 'site of exposure', 'duration since exposure', 'severity of damage', 'associated symptoms', 'treatment given on-site'] },
+          { type: 'Biological', fields: ['type of infection', 'site of infection', 'severity', 'associated symptoms', 'progression speed', 'treatment given on-site'] },
+          { type: 'Previously Treated', fields: ['type of previous treatment', 'date of treatment', 'complication symptoms', 'site affected', 'severity of reaction', 'immediate actions taken'] }
+        ]
+      },
+      { type: 'Referred', fields: ['referred from', 'date & time of referral', 'reason'] }
+    ]
+  }
+];
+
+/*
+  prefix = null
+  i = 0
+
+  current = ccTypes[0]
+
+  prefix = 0
+  i = i
+  current = ccTypes[0].subtypes[i]
+
+  prefix = 0-1
+  i = i
+  current = ccTypesp[0],subtypes[1].subtypes[i]
+*/ 
+
+function unifiedLoadCC(masterDiv, prefix, i) {
+  // Build selection screen - 'subtypes'
+  // buildFormFields - 'fields'  
+  
+  let UIBoch = [];
+  let UIBochTitle = "";
+  const indices = idGenerator(prefix);
+  const secondKey = getSecondKeyFromIndices(indices, ccTypes, i);
+  
+  
+  function idGenerator(prefix) {
+    if (prefix === '' || prefix === 'null') {
+      return null;
+    } else {
+      return prefix.split('-').map(Number);
+    }
+  }
+  function getSecondKeyFromIndices(indices, data, extraIndex) {
+    let current;
+  
+    if (indices && indices.length > 0) {
+      current = data[indices[0]];
+      for (let j = 1; j < indices.length; j++) {
+        if (!current.subtypes) break;
+        current = current.subtypes[indices[j]];
+      }
+      if (extraIndex != null && current.subtypes) {
+        current = current.subtypes[extraIndex];
+      }
+    } else {
+      current = data[extraIndex];
+    }
+
+    let keys = Object.keys(current);
+    
+    UIBochTitle = current.type;
+    if (keys.includes('subtypes') && Array.isArray(current.subtypes)) {
+      for (let j = 0; j < current.subtypes.length; j++) {
+        UIBoch.push(current.subtypes[j].type);
+      }
+    } else if (keys.includes('fields') && Array.isArray(current.fields)) {
+      console.log(current.fields);
+      for (let j = 0; j < current.fields.length; j++) {
+        UIBoch.push(current.fields[j]);
+      }
+    }
+    return keys.length >= 2 ? keys[1] : 'subtypes';
+  }
+
+  let newStr = prefix.length > 2 ? prefix.slice(0, -2) : "";
+  let newPrefix = prefix === "" ? i : prefix + '-' + i;
+  if (secondKey === 'subtypes') {
+    console.log(UIBoch);
+    buildSelectionScreen(
+      masterDiv,
+      `Select the type of ${UIBochTitle}:`,
+      `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`,
+      UIBoch,
+      (index) => `unifiedLoadCC('${masterDiv}', '${newPrefix}', '${index}')`
+    )
+    
+  } else if (secondKey === 'fields') {
+    console.log(UIBoch);
+    let headerHTML = generateHeader(`${UIBochTitle}`, `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`);
+    let fieldsHTML = buildFormFields(UIBoch, [], 'textarea', `ccTypes${prefix}`);
+    let footerHTML = generateFooter(`ccTypes${prefix}`, i, `${masterDiv}`, 'textarea');
+    document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;  
   }
 }
-function showEmergencySelection(masterDiv) {
-  const emergency = ['Traumatic', 'Chemical', 'Biological', 'Previously Treated'];
-  buildSelectionScreen(
-    masterDiv,
-    "Select the type of emergency:",
-    "selectCC('" + masterDiv + "')", // back callback
-    emergency,
-    (index) => `loadCCEmergency('${masterDiv}', ${index})`
-  );
-}
+
 
 function clearCCComponents(divId) {
   let div = document.getElementById(divId);
   if (div) {
     div.querySelectorAll("input, textarea").forEach(element => element.value = "");
   }
-}
-
-// CC Components (EMERGENCY)
-const ccEmergency = [
-  ['Traumatic', 'type of trauma', 'location of trauma', 'date & time of trauma', 'patient role (pre-mechanism)', 'known mechanism of trauma', 'unknown mechanism of trauma', 'impact details (post-mechanism)', 'source of story', 'patient symptoms', 'treatment given on-site'],
-  ['Chemical'],
-  ['Biological'],
-  ['Previously Treated']
-];
-function loadCCEmergency(masterDiv, i) {
-  let headerHTML = generateHeader(`${ccEmergency[i][0]}`, `loadCCAdder('${masterDiv}', 4)`);
-  let fieldsHTML = buildFormFields(ccEmergency[i], [], 'textarea', 'ccEmergency');
-  let footerHTML = `
-      </div>
-      <div>
-        <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccEmergency')"><p>Clear</p></button>
-        <button class="rectButtonShort redButton" onclick="saveCCUnified(${i}, '${masterDiv}', 'textarea', ccEmergency[${i}], 'ccEmergency')"><p>Save</p></button>
-      </div>
-    </div>
-  `;
-  document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
 }
 
 // Global Fx
@@ -278,6 +317,16 @@ function generateHeader(title, backCallback) {
       </button>
     </div>
     <div>
+  `;
+}
+function generateFooter(fieldsArray, i, masterDiv, elementType) {
+  return `
+    </div>
+      <div>
+        <button class="rectButtonShort blackButton" onclick="clearCCComponents('${masterDiv}')"><p>Clear</p></button>
+        <button class="rectButtonShort redButton" onclick="saveCCUnified(${i}, '${masterDiv}', '${elementType}', ${fieldsArray}[${i}], '${fieldsArray}')"><p>Save</p></button>
+      </div>
+    </div>
   `;
 }
 function saveCCUnified(i, masterDiv, elementType, fieldsArray, containerId) {
@@ -312,9 +361,9 @@ function saveCCUnified(i, masterDiv, elementType, fieldsArray, containerId) {
 }
 function buildFormFields(fieldsArray, savedValues, elementType, containerId) {
   let fieldsHTML = "";
-  
+  console.log(fieldsArray);
   // Loop through each field (skipping index 0, which is the header)
-  for (let j = 1; j < fieldsArray.length; j++) {
+  for (let j = 0; j < fieldsArray.length; j++) {
     let fieldLabel = fieldsArray[j];
     let savedVal = savedValues && savedValues[j] ? savedValues[j] : "";
     
@@ -381,3 +430,61 @@ function buildSelectionScreen(masterDiv, title, backCallback, buttonLabels, butt
   
   document.getElementById(masterDiv).innerHTML = fullHTML;
 }
+
+// Main UI Actions (add, clear, edit(3), del)
+/*
+ARCHRIVESSSSSS
+
+const ccComponents = [
+  ['Check', 'reason', 'site', 'since', 'associated', 'severity'],
+  ['Pain', 'site', 'onset', 'characteristics', 'radiating', 'associated', 'timing', 'modifier', 'severity'],
+  ['Requesting Treatment', 'treatment type', 'site', 'reason'],
+  ['Purchase of Goods', 'name of goods', 'quantity', 'reason'],
+  ['Emergency'],
+  ['Referred', 'referred from', 'date & time of referral', 'reason']
+];
+
+function selectCC(masterDiv) {
+  const contentCC = ['Check', 'Pain', 'Requesting Treatment', 'Purchase of Goods', 'Emergency', 'Referred'];
+  buildSelectionScreen(
+    masterDiv,
+    "Select the type of complaint:",
+    "loadCC('" + masterDiv + "')", // back callback
+    contentCC,
+    (index) => `loadCCAdder('${masterDiv}', ${index})`
+  );
+}
+function loadCCAdder(masterDiv, i) {
+  if (i === 4) {
+    showEmergencySelection(masterDiv);
+  } else {
+    let headerHTML = generateHeader(`${ccComponents[i][0]}`, `selectCC('${masterDiv}')`);
+    let fieldsHTML = buildFormFields(ccComponents[i], [], 'input', 'ccComponents');
+    let footerHTML = generateFooter('ccComponents', i, `${masterDiv}`, 'input');
+    document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;  
+  }
+}
+function showEmergencySelection(masterDiv) {
+  const emergency = ['Traumatic', 'Chemical', 'Biological', 'Previously Treated'];
+  buildSelectionScreen(
+    masterDiv,
+    "Select the type of emergency:",
+    "selectCC('" + masterDiv + "')", // back callback
+    emergency,
+    (index) => `loadCCEmergency('${masterDiv}', ${index})`
+  );
+}
+  // CC Components (EMERGENCY)
+const ccEmergency = [
+  ['Traumatic', 'type of trauma', 'location of trauma', 'date & time of trauma', 'patient role (pre-mechanism)', 'known mechanism of trauma', 'unknown mechanism of trauma', 'impact details (post-mechanism)', 'source of story', 'patient symptoms', 'treatment given on-site'],
+  ['Chemical'],
+  ['Biological'],
+  ['Previously Treated']
+];
+function loadCCEmergency(masterDiv, i) {
+  let headerHTML = generateHeader(`${ccEmergency[i][0]}`, `loadCCAdder('${masterDiv}', 4)`);
+  let fieldsHTML = buildFormFields(ccEmergency[i], [], 'textarea', 'ccEmergency');
+  let footerHTML = generateFooter('ccEmergency', i, `${masterDiv}`, 'textarea');
+  document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
+}
+*/ 
