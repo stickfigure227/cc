@@ -85,8 +85,20 @@ function del(i, masterDiv) {
     loadCC(`${masterDiv}`);
   }
 }
+// Check the first of the first index of the ccHx and determine which instruction to be done 
 function undo(i, masterDiv) {
-
+  if (i === 1) {
+    const index = ccHx[0][0];
+    if (index === null) {
+      // restore whole CC
+      cc = ccHx[0][1];
+      ccHx.shift();
+      loadCC(`${masterDiv}`);
+    } else {
+      // slot back in previous removed CC / restore back hx of previous CC
+      
+    }
+  }
 }
 function editCC(path, masterDiv, ccEntryIndex) {
   console.log(cc);
