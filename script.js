@@ -5,6 +5,7 @@ window.onload = function() {
 
 // Main UI
 let cc = [];
+let ccHx = [];
 
 /* Sample
 
@@ -26,6 +27,7 @@ function loadCC(masterDiv) {
   let toolbarContainer = `      
     <h1 id="h1-1", onclick="void(0)">Chief Complaint</h1>
     <div>
+      <button class="rectButtonShort blackButton" id="undo-1" onclick="undo(1, '${masterDiv}')"><p>Undo</p></button>
       <button class="rectButtonShort blackButton" id="clear-1" onclick="del(1, '${masterDiv}')"><p>Clear</p></button>
       <button class="rectButtonShort blackButton" id="add-1" onclick="unifiedLoadCC('${masterDiv}','','0')"><p>Add</p></button>
     </div>
@@ -60,7 +62,7 @@ function loadCC(masterDiv) {
       }
     }
     logDescription += `</ul></div>`;
-    let logTool = `<div style="width: 120px;"><button class="blackButton roundButton rBSmall" onclick="editCC(${i}, '${masterDiv}')"></button><button class="redButton roundButton rBSmall" onclick="removeCC(${i}, '${masterDiv}')"></button></div>`;
+    let logTool = `<div style="width: 120px;"><button class="blackButton roundButton rBSmall" onclick="editCC('${cc[i][2]}', '${masterDiv}', ${i})"></button><button class="redButton roundButton rBSmall" onclick="removeCC(${i}, '${masterDiv}')"></button></div>`;
     logsContainer += `${logDescription}${logTool}</div>`
   }
 
@@ -75,88 +77,44 @@ function loadCC(masterDiv) {
  
 function del(i, masterDiv) {
   if (i === 1) {
+    ccHx.unshift([]);
+    ccHx[0].push(null);
+    ccHx[0].push(cc);
     cc = [];
+    console.log(ccHx);
     loadCC(`${masterDiv}`);
   }
 }
-function editCC(i, masterDiv) { 
-  // Retrieve the saved data for this entry.
-  // Each cc entry is structured as: [headerArray, valueArray]
-  let savedHeader = cc[i][0]; // e.g., ["Check", ...] or ["Traumatic", ...]
-  let savedValues = cc[i][1];
+function undo(i, masterDiv) {
 
-  // First, try to find a matching non-emergency category in ccComponents.
-  let categoryIndex = ccComponents.findIndex(component => component[0] === savedHeader[0]);
-
-  if (categoryIndex !== -1) {
-    // Build the editing form for a non-emergency entry.
-    let ccComponentsList = '';
-    for (let j = 0; j < ccComponents[categoryIndex].length; j++) {
-      if (j === 0) {
-        ccComponentsList += `
-          ${generateHeader(`${ccComponents[categoryIndex][j]}`,`selectCC('${masterDiv}')`)}
-        `;
-      } else {
-        let savedValue = savedValues[j] ? savedValues[j] : "";
-        ccComponentsList += `
-          <div>
-            <label>${ccComponents[categoryIndex][j]}: </label>
-            <input id="ccComponentsInput${j}" value="${savedValue}">
-          </div>
-        `;
-      }
-    }
-    ccComponentsList += `
-            </div>
-            <div>
-              <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccComponents')">
-                <p>Clear</p>
-              </button>
-              <button class="rectButtonShort redButton" onclick="updateCCUnified(${i}, ${categoryIndex}, '${masterDiv}', 'input', ccComponents[${categoryIndex}])">
-                <p>Update</p>
-              </button>
-            </div>
-          </div>
-    `;
-    document.getElementById(masterDiv).innerHTML = ccComponentsList;
-  } else {
-    // If not found in ccComponents, try to find it in ccEmergency.
-    let emergencyIndex = ccEmergency.findIndex(em => em[0] === savedHeader[0]);
-    if (emergencyIndex !== -1) {
-      // Build the editing form for an emergency entry.
-      let emergencyComponentsList = '';
-      for (let j = 0; j < ccEmergency[emergencyIndex].length; j++) {
-        if (j === 0) {
-          emergencyComponentsList += `
-            ${generateHeader(`${ccEmergency[emergencyIndex][j]}`, `${masterDiv}`)}
-          `;
-        } else {
-          let savedVal = savedValues[j] ? savedValues[j] : "";
-          emergencyComponentsList += `
-            <div>
-              <label>${ccEmergency[emergencyIndex][j]}: </label>
-              <textarea id="ccEmergencyTextarea${j}">${savedVal}</textarea>
-            </div>
-          `;
-        }
-      }
-      emergencyComponentsList += `
-              </div>
-              <div>
-                <button class="rectButtonShort blackButton" onclick="clearCCComponents('ccEmergency')">
-                  <p>Clear</p>
-                </button>
-                <button class="rectButtonShort redButton" onclick="updateCCUnified(${i}, ${emergencyIndex}, '${masterDiv}', 'textarea', ccEmergency[${emergencyIndex}])">
-                  <p>Update</p>
-                </button>
-              </div>
-            </div>
-      `;
-      document.getElementById(masterDiv).innerHTML = emergencyComponentsList;
-    } else {
-      console.error("Category not found for editing.");
-    }
+}
+function editCC(path, masterDiv, ccEntryIndex) {
+  console.log(cc);
+  // Parse the path to get indices array
+  let indices = idGenerator(path);
+  console.log
+  // Get the complaint type object from the unified ccTypes
+  let complaintType = getComplaintTypeByIndices(indices, ccTypes);
+  
+  // For a leaf node, complaintType should have a "fields" array.
+  if (!complaintType || !complaintType.fields) {
+    console.error("Invalid complaint type or not a leaf node");
+    return;
   }
+  
+  // Use complaintType.type as the header title
+  let headerHTML = generateHeader(complaintType.type, `loadCC('${masterDiv}')`);
+  
+  // Build the fields. Use the saved values from cc[ccEntryIndex][1]
+  const modifiedFields = cc[ccEntryIndex][1].slice(1)
+  let fieldsHTML = buildFormFields(complaintType.fields, modifiedFields, 'textarea', 'complaintForm');
+  
+  // Generate a footer with update functionality.
+  // You need to adjust generateFooter and updateCCUnified to accept the unified structure.
+  let footerHTML = generateFooter(ccEntryIndex, 'complaintForm', `${cc[ccEntryIndex][2]}`, masterDiv, 'textarea', complaintType.fields.join(','), complaintType.type, 'Update');
+  
+  // Set the master container's innerHTML
+  document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
 }
 function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) {
   let updatedValues = [];
@@ -186,7 +144,11 @@ function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) 
 }
 function removeCC(i, masterDiv) {
   document.getElementById(`logCC${i}`).remove();
+  ccHx.unshift([]);
+  ccHx[0].push(i);
+  ccHx[0].push(cc[i]);
   cc.splice(i, 1);
+  console.log(ccHx);
   loadCC(masterDiv);
 }
 
@@ -202,10 +164,10 @@ const ccTypes = [
       { 
         type: 'Emergency',
         subtypes: [
-          { type: 'Traumatic', fields: ['type of trauma', 'location of trauma', 'date & time of trauma', 'patient role (pre-mechanism)', 'mechanism of trauma', 'impact details (post-mechanism)', 'source of story', 'patient symptoms', 'treatment given on-site'] },
-          { type: 'Chemical', fields: ['type of chemical', 'site of exposure', 'duration since exposure', 'severity of damage', 'associated symptoms', 'treatment given on-site'] },
-          { type: 'Biological', fields: ['type of infection', 'site of infection', 'severity', 'associated symptoms', 'progression speed', 'treatment given on-site'] },
-          { type: 'Previously Treated', fields: ['type of previous treatment', 'date of treatment', 'complication symptoms', 'site affected', 'severity of reaction', 'immediate actions taken'] }
+          { type: 'Traumatic Emergency', fields: ['type of trauma', 'location of trauma', 'date & time of trauma', 'patient role (pre-mechanism)', 'mechanism of trauma', 'impact details (post-mechanism)', 'source of story', 'patient symptoms', 'treatment given on-site'] },
+          { type: 'Chemical Emergency', fields: ['type of chemical', 'site of exposure', 'duration since exposure', 'severity of damage', 'associated symptoms', 'treatment given on-site'] },
+          { type: 'Biological Emergency', fields: ['type of infection', 'site of infection', 'severity', 'associated symptoms', 'progression speed', 'treatment given on-site'] },
+          { type: 'Previously Treated Emergency', fields: ['type of previous treatment', 'date of treatment', 'complication symptoms', 'site affected', 'severity of reaction', 'immediate actions taken'] }
         ]
       },
       { type: 'Referred', fields: ['referred from', 'date & time of referral', 'reason'] }
@@ -227,7 +189,7 @@ const ccTypes = [
   i = i
   current = ccTypesp[0],subtypes[1].subtypes[i]
 */ 
-
+// HTML loader
 function unifiedLoadCC(masterDiv, prefix, i) {
   // Build selection screen - 'subtypes'
   // buildFormFields - 'fields'  
@@ -237,14 +199,6 @@ function unifiedLoadCC(masterDiv, prefix, i) {
   const indices = idGenerator(prefix);
   const secondKey = getSecondKeyFromIndices(indices, ccTypes, i);
   
-  
-  function idGenerator(prefix) {
-    if (prefix === '' || prefix === 'null') {
-      return null;
-    } else {
-      return prefix.split('-').map(Number);
-    }
-  }
   function getSecondKeyFromIndices(indices, data, extraIndex) {
     let current;
   
@@ -260,7 +214,7 @@ function unifiedLoadCC(masterDiv, prefix, i) {
     } else {
       current = data[extraIndex];
     }
-
+    
     let keys = Object.keys(current);
     
     UIBochTitle = current.type;
@@ -269,18 +223,17 @@ function unifiedLoadCC(masterDiv, prefix, i) {
         UIBoch.push(current.subtypes[j].type);
       }
     } else if (keys.includes('fields') && Array.isArray(current.fields)) {
-      console.log(current.fields);
       for (let j = 0; j < current.fields.length; j++) {
         UIBoch.push(current.fields[j]);
       }
     }
+
     return keys.length >= 2 ? keys[1] : 'subtypes';
   }
 
   let newStr = prefix.length > 2 ? prefix.slice(0, -2) : "";
   let newPrefix = prefix === "" ? i : prefix + '-' + i;
   if (secondKey === 'subtypes') {
-    console.log(UIBoch);
     buildSelectionScreen(
       masterDiv,
       `Select the type of ${UIBochTitle}:`,
@@ -288,25 +241,15 @@ function unifiedLoadCC(masterDiv, prefix, i) {
       UIBoch,
       (index) => `unifiedLoadCC('${masterDiv}', '${newPrefix}', '${index}')`
     )
-    
   } else if (secondKey === 'fields') {
-    console.log(UIBoch);
     let headerHTML = generateHeader(`${UIBochTitle}`, `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`);
     let fieldsHTML = buildFormFields(UIBoch, [], 'textarea', `ccTypes${prefix}`);
-    let footerHTML = generateFooter(`ccTypes${prefix}`, i, `${masterDiv}`, 'textarea');
+    let footerHTML = generateFooter('null', `ccTypes${prefix}`, `${prefix}-${i}`, `${masterDiv}`, 'textarea', `${UIBoch}`, `${UIBochTitle}`,'Save');
     document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;  
   }
 }
 
-
-function clearCCComponents(divId) {
-  let div = document.getElementById(divId);
-  if (div) {
-    div.querySelectorAll("input, textarea").forEach(element => element.value = "");
-  }
-}
-
-// Global Fx
+// HTML Library Engines
 function generateHeader(title, backCallback) {
   return `
   <div>
@@ -319,49 +262,8 @@ function generateHeader(title, backCallback) {
     <div>
   `;
 }
-function generateFooter(fieldsArray, i, masterDiv, elementType) {
-  return `
-    </div>
-      <div>
-        <button class="rectButtonShort blackButton" onclick="clearCCComponents('${masterDiv}')"><p>Clear</p></button>
-        <button class="rectButtonShort redButton" onclick="saveCCUnified(${i}, '${masterDiv}', '${elementType}', ${fieldsArray}[${i}], '${fieldsArray}')"><p>Save</p></button>
-      </div>
-    </div>
-  `;
-}
-function saveCCUnified(i, masterDiv, elementType, fieldsArray, containerId) {
-  let saveCC = [];
-  saveCC.push(fieldsArray); // Save the header (field names)
-  let temporaryArray = [];
-  
-  // Loop over fields, plus one extra slot for a placeholder at index 0.
-  for (let j = 0; j < fieldsArray.length + 1; j++) {
-    if (j === 0) {
-      temporaryArray.push("");
-    } else {
-      let element;
-      if (elementType === 'input') {
-        element = document.getElementById(`${containerId}Input${j}`);
-      } else if (elementType === 'textarea') {
-        element = document.getElementById(`${containerId}Textarea${j}`);
-      }
-      temporaryArray.push(element ? element.value : "");
-    }
-  }
-  
-  saveCC.push(temporaryArray);
-  cc.push(saveCC);
-  
-  // Remove the container element after saving.
-  let container = document.getElementById(containerId);
-  if (container) container.remove();
-  
-  // Reload the main UI.
-  loadCC(masterDiv);
-}
 function buildFormFields(fieldsArray, savedValues, elementType, containerId) {
   let fieldsHTML = "";
-  console.log(fieldsArray);
   // Loop through each field (skipping index 0, which is the header)
   for (let j = 0; j < fieldsArray.length; j++) {
     let fieldLabel = fieldsArray[j];
@@ -369,14 +271,14 @@ function buildFormFields(fieldsArray, savedValues, elementType, containerId) {
     
     if (elementType === 'input') {
       fieldsHTML += `
-        <div>
+        <div class="fieldsDiv">
           <label>${fieldLabel}: </label>
           <input id="${containerId}Input${j}" value="${savedVal}">
         </div>
       `;
     } else if (elementType === 'textarea') {
       fieldsHTML += `
-        <div>
+        <div class="fieldsDiv">
           <label>${fieldLabel}: </label>
           <textarea id="${containerId}Textarea${j}">${savedVal}</textarea>
         </div>
@@ -385,6 +287,16 @@ function buildFormFields(fieldsArray, savedValues, elementType, containerId) {
   }
   
   return fieldsHTML;
+}
+function generateFooter(index, id, prefix, masterDiv, elementType, fieldsArray, title, buttonName) {
+  return `
+    </div>
+      <div>
+        <button class="rectButtonShort blackButton" onclick="clearCCComponents('${masterDiv}')"><p>Clear</p></button>
+        <button class="rectButtonShort redButton" onclick="saveCCUnified('${index}', '${prefix}', '${masterDiv}', '${elementType}', '${fieldsArray}', '${id}', '${title}')"><p>${buttonName}</p></button>
+      </div>
+    </div>
+  `;
 }
 /**
  * Builds a selection screen with a header and a grid of buttons.
@@ -429,6 +341,78 @@ function buildSelectionScreen(masterDiv, title, backCallback, buttonLabels, butt
   `;
   
   document.getElementById(masterDiv).innerHTML = fullHTML;
+}
+
+// Form's Action
+function clearCCComponents(divId) {
+  let div = document.getElementById(divId);
+  if (div) {
+    div.querySelectorAll("input, textarea").forEach(element => element.value = "");
+  }
+}
+function saveCCUnified(index, prefix, masterDiv, elementType, arrayStr, containerId, title) {
+  let saveCC = [];
+   // Save the header (field names)
+  let temporaryArray = [""];
+  const fieldsArray = arrayStr.split(',');
+  fieldsArray.unshift(title);
+  saveCC.push(fieldsArray);
+  
+  // Loop over fields, plus one extra slot for a placeholder at index 0.
+  for (let j = 0; j < fieldsArray.length; j++) {
+    let element;
+    if (elementType === 'input') {
+      element = document.getElementById(`${containerId}Input${j}`);
+    } else if (elementType === 'textarea') {
+      element = document.getElementById(`${containerId}Textarea${j}`);
+    }
+    temporaryArray.push(element ? element.value : "");
+  }
+  saveCC.push(temporaryArray);
+  saveCC.push(prefix);
+  if (index === 'null') {
+    cc.push(saveCC);
+    let indexSaveCC = cc.indexOf(saveCC);
+    ccHx.unshift([]);
+    ccHx[0].push(indexSaveCC);
+    ccHx[0].push(saveCC);
+  } else {
+    ccHx.unshift([]);
+    ccHx[0].push(parseInt(index, 10));
+    ccHx[0].push(saveCC);
+    console.log(ccHx);
+    cc[index]= saveCC;
+  }
+  
+  
+  // Remove the container element after saving.
+  let container = document.getElementById(containerId);
+  if (container) container.remove();
+  
+  // Reload the main UI.
+  loadCC(masterDiv);
+}
+
+// Helper Fx
+function idGenerator(prefix) {
+  if (prefix === '' || prefix === 'null') {
+    return null;
+  } else {
+    return prefix.split('-').map(Number);
+  }
+}
+// Helper: Traverse ccTypes using an array of indices
+function getComplaintTypeByIndices(indices, ccTypes) {
+  let current = ccTypes;
+  for (let index of indices) {
+    // Assume current is an array or object with a "subtypes" property
+    if (Array.isArray(current)) {
+      current = current[index];
+    } else if (current.subtypes) {
+      current = current.subtypes[index];
+    }
+  }
+  return current;
 }
 
 // Main UI Actions (add, clear, edit(3), del)
