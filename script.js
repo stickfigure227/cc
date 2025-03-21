@@ -6,6 +6,7 @@ window.onload = function() {
 // Main UI
 let cc = [];
 let ccHx = [];
+let ccReHx = [];
 
 /* Sample
 
@@ -27,6 +28,7 @@ function loadCC(masterDiv) {
   let toolbarContainer = `      
     <h1 id="h1-1", onclick="void(0)">Chief Complaint</h1>
     <div>
+      <button class="rectButtonShort blackButton" id="undo-1" onclick="redo(1, '${masterDiv}')"><p>Redo</p></button>    
       <button class="rectButtonShort blackButton" id="undo-1" onclick="undo(1, '${masterDiv}')"><p>Undo</p></button>
       <button class="rectButtonShort blackButton" id="clear-1" onclick="del(1, '${masterDiv}')"><p>Clear</p></button>
       <button class="rectButtonShort blackButton" id="add-1" onclick="unifiedLoadCC('${masterDiv}','','0')"><p>Add</p></button>
@@ -81,7 +83,6 @@ function del(i, masterDiv) {
     ccHx[0].push(null);
     ccHx[0].push(cc);
     cc = [];
-    console.log(ccHx);
     loadCC(`${masterDiv}`);
   }
 }
@@ -92,13 +93,51 @@ function undo(i, masterDiv) {
     if (index === null) {
       // restore whole CC
       cc = ccHx[0][1];
-      ccHx.shift();
-      loadCC(`${masterDiv}`);
+      ccReHx.unshift(ccHx[0]);
+    } else if (index === true) {
+      // remove added new CC
+      cc.splice(cc.indexOf(ccHx[0][1]), 1);
+      ccReHx.unshift(ccHx[0]);
+    } else if (index[0] === "r") {
+      // restore removed CC
+      cc.splice(+index.slice(1), 0, ccHx[0][1]);
+      ccReHx.unshift(ccHx[0]);
     } else {
-      // slot back in previous removed CC / restore back hx of previous CC
-      
+      // restore back hx of previous CC
+      ccReHx.unshift([index, cc[index]]);
+      cc[index] = ccHx[0][1];
     }
+    ccHx.shift();
+    loadCC(masterDiv);
   }
+  console.log(ccHx);
+  console.log(ccReHx);
+}
+function redo(i, masterDiv) {
+  if (i === 1) {
+    const index = ccReHx[0][0];
+    if (index === null) {
+      // remove restore whole CC
+      cc = [];
+      ccHx.unshift(ccReHx[0]);
+    } else if (index === true) {
+      // restore remove added new CC
+      cc.splice(index, 0, ccReHx[0][1]);
+      ccHx.unshift(ccReHx[0]);
+    } else if (index[0] === "r") {
+      // remove restore removed CC
+      cc.splice(+index.slice(1), 1);
+      ccHx.unshift(ccReHx[0]);
+    } else {
+      // restore back hx of previous CC
+      ccHx.unshift([index, cc[index]]);
+      cc[index] = ccReHx[0][1];
+    }
+    ccReHx.shift();
+    loadCC(masterDiv);
+  }
+  console.log(ccHx);
+  console.log(ccReHx);
 }
 function editCC(path, masterDiv, ccEntryIndex) {
   console.log(cc);
@@ -157,7 +196,7 @@ function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) 
 function removeCC(i, masterDiv) {
   document.getElementById(`logCC${i}`).remove();
   ccHx.unshift([]);
-  ccHx[0].push(i);
+  ccHx[0].push(`r${i}`);
   ccHx[0].push(cc[i]);
   cc.splice(i, 1);
   console.log(ccHx);
@@ -205,59 +244,62 @@ const ccTypes = [
 function unifiedLoadCC(masterDiv, prefix, i) {
   // Build selection screen - 'subtypes'
   // buildFormFields - 'fields'  
-  
-  let UIBoch = [];
-  let UIBochTitle = "";
-  const indices = idGenerator(prefix);
-  const secondKey = getSecondKeyFromIndices(indices, ccTypes, i);
-  
-  function getSecondKeyFromIndices(indices, data, extraIndex) {
-    let current;
-  
-    if (indices && indices.length > 0) {
-      current = data[indices[0]];
-      for (let j = 1; j < indices.length; j++) {
-        if (!current.subtypes) break;
-        current = current.subtypes[indices[j]];
-      }
-      if (extraIndex != null && current.subtypes) {
-        current = current.subtypes[extraIndex];
-      }
-    } else {
-      current = data[extraIndex];
-    }
-    
-    let keys = Object.keys(current);
-    
-    UIBochTitle = current.type;
-    if (keys.includes('subtypes') && Array.isArray(current.subtypes)) {
-      for (let j = 0; j < current.subtypes.length; j++) {
-        UIBoch.push(current.subtypes[j].type);
-      }
-    } else if (keys.includes('fields') && Array.isArray(current.fields)) {
-      for (let j = 0; j < current.fields.length; j++) {
-        UIBoch.push(current.fields[j]);
-      }
-    }
+  if (prefix === "" && i === "") {
+    loadCC(masterDiv);
+  } else {
+    let UIBoch = [];
+    let UIBochTitle = "";
+    const indices = idGenerator(prefix);
+    const secondKey = getSecondKeyFromIndices(indices, ccTypes, i);
 
-    return keys.length >= 2 ? keys[1] : 'subtypes';
-  }
-
-  let newStr = prefix.length > 2 ? prefix.slice(0, -2) : "";
-  let newPrefix = prefix === "" ? i : prefix + '-' + i;
-  if (secondKey === 'subtypes') {
-    buildSelectionScreen(
-      masterDiv,
-      `Select the type of ${UIBochTitle}:`,
-      `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`,
-      UIBoch,
-      (index) => `unifiedLoadCC('${masterDiv}', '${newPrefix}', '${index}')`
-    )
-  } else if (secondKey === 'fields') {
-    let headerHTML = generateHeader(`${UIBochTitle}`, `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`);
-    let fieldsHTML = buildFormFields(UIBoch, [], 'textarea', `ccTypes${prefix}`);
-    let footerHTML = generateFooter('null', `ccTypes${prefix}`, `${prefix}-${i}`, `${masterDiv}`, 'textarea', `${UIBoch}`, `${UIBochTitle}`,'Save');
-    document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;  
+    function getSecondKeyFromIndices(indices, data, extraIndex) {
+      let current;
+    
+      if (indices && indices.length > 0) {
+        current = data[indices[0]];
+        for (let j = 1; j < indices.length; j++) {
+          if (!current.subtypes) break;
+          current = current.subtypes[indices[j]];
+        }
+        if (extraIndex != null && current.subtypes) {
+          current = current.subtypes[extraIndex];
+        }
+      } else {
+        current = data[extraIndex];
+      }
+      
+      let keys = Object.keys(current);
+      
+      UIBochTitle = current.type;
+      if (keys.includes('subtypes') && Array.isArray(current.subtypes)) {
+        for (let j = 0; j < current.subtypes.length; j++) {
+          UIBoch.push(current.subtypes[j].type);
+        }
+      } else if (keys.includes('fields') && Array.isArray(current.fields)) {
+        for (let j = 0; j < current.fields.length; j++) {
+          UIBoch.push(current.fields[j]);
+        }
+      }
+    
+      return keys.length >= 2 ? keys[1] : 'subtypes';
+    }
+  
+    let newStr = prefix.length > 2 ? prefix.slice(0, -2) : "";
+    let newPrefix = prefix === "" ? i : prefix + '-' + i;
+    if (secondKey === 'subtypes') {
+      buildSelectionScreen(
+        masterDiv,
+        `Select the type of ${UIBochTitle}:`,
+        `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`,
+        UIBoch,
+        (index) => `unifiedLoadCC('${masterDiv}', '${newPrefix}', '${index}')`
+      )
+    } else if (secondKey === 'fields') {
+      let headerHTML = generateHeader(`${UIBochTitle}`, `unifiedLoadCC('${masterDiv}','${newStr}', '${prefix.slice(-1)}')`);
+      let fieldsHTML = buildFormFields(UIBoch, [], 'textarea', `ccTypes${prefix}`);
+      let footerHTML = generateFooter('null', `ccTypes${prefix}`, `${prefix}-${i}`, `${masterDiv}`, 'textarea', `${UIBoch}`, `${UIBochTitle}`,'Save');
+      document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;  
+    }  
   }
 }
 
@@ -386,12 +428,12 @@ function saveCCUnified(index, prefix, masterDiv, elementType, arrayStr, containe
     cc.push(saveCC);
     let indexSaveCC = cc.indexOf(saveCC);
     ccHx.unshift([]);
-    ccHx[0].push(indexSaveCC);
+    ccHx[0].push(true);
     ccHx[0].push(saveCC);
   } else {
     ccHx.unshift([]);
     ccHx[0].push(parseInt(index, 10));
-    ccHx[0].push(saveCC);
+    ccHx[0].push(cc[index]);
     console.log(ccHx);
     cc[index]= saveCC;
   }
@@ -426,6 +468,8 @@ function getComplaintTypeByIndices(indices, ccTypes) {
   }
   return current;
 }
+// Helper: Get the second key
+
 
 // Main UI Actions (add, clear, edit(3), del)
 /*
