@@ -75,6 +75,12 @@ function loadCC(masterDiv) {
       <div class="logDiv">${logsContainer}</div>
     </div>
   `;
+
+  // Scrol to last
+  const logDiv = document.querySelector(`#${masterDiv} .logDiv`);
+  if (logDiv) {
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
 }
  
 function del(i, masterDiv) {
@@ -82,6 +88,7 @@ function del(i, masterDiv) {
     ccHx.unshift([]);
     ccHx[0].push(null);
     ccHx[0].push(cc);
+    ccReHx = [];
     cc = [];
     loadCC(`${masterDiv}`);
   }
@@ -96,8 +103,8 @@ function undo(i, masterDiv) {
       ccReHx.unshift(ccHx[0]);
     } else if (index === true) {
       // remove added new CC
+      ccReHx.unshift([`t${cc.indexOf(ccHx[0][1])}`, ccHx[0][1]]);
       cc.splice(cc.indexOf(ccHx[0][1]), 1);
-      ccReHx.unshift(ccHx[0]);
     } else if (index[0] === "r") {
       // restore removed CC
       cc.splice(+index.slice(1), 0, ccHx[0][1]);
@@ -110,8 +117,6 @@ function undo(i, masterDiv) {
     ccHx.shift();
     loadCC(masterDiv);
   }
-  console.log(ccHx);
-  console.log(ccReHx);
 }
 function redo(i, masterDiv) {
   if (i === 1) {
@@ -120,10 +125,10 @@ function redo(i, masterDiv) {
       // remove restore whole CC
       cc = [];
       ccHx.unshift(ccReHx[0]);
-    } else if (index === true) {
+    } else if (index[0] === "t") {
       // restore remove added new CC
-      cc.splice(index, 0, ccReHx[0][1]);
-      ccHx.unshift(ccReHx[0]);
+      cc.splice(+index.slice(1), 0, ccReHx[0][1]);
+      ccHx.unshift([true, ccReHx[0][1]]);
     } else if (index[0] === "r") {
       // remove restore removed CC
       cc.splice(+index.slice(1), 1);
@@ -136,8 +141,6 @@ function redo(i, masterDiv) {
     ccReHx.shift();
     loadCC(masterDiv);
   }
-  console.log(ccHx);
-  console.log(ccReHx);
 }
 function editCC(path, masterDiv, ccEntryIndex) {
   console.log(cc);
@@ -189,7 +192,7 @@ function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) 
   
   // Update the cc array with the new values
   cc[i][1] = updatedValues;
-  
+  ccReHx = [];
   // Refresh the UI
   loadCC(masterDiv);
 }
@@ -198,6 +201,7 @@ function removeCC(i, masterDiv) {
   ccHx.unshift([]);
   ccHx[0].push(`r${i}`);
   ccHx[0].push(cc[i]);
+  ccReHx = [];
   cc.splice(i, 1);
   console.log(ccHx);
   loadCC(masterDiv);
@@ -442,7 +446,7 @@ function saveCCUnified(index, prefix, masterDiv, elementType, arrayStr, containe
   // Remove the container element after saving.
   let container = document.getElementById(containerId);
   if (container) container.remove();
-  
+  ccReHx = [];
   // Reload the main UI.
   loadCC(masterDiv);
 }
