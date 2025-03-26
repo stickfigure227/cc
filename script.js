@@ -90,9 +90,9 @@ function del(i, masterDiv) {
     ccHx[0].push(null);
     ccHx[0].push(cc);
     ccHx[0].push('max');
+    scrollAmt = 'max';
     ccReHx = [];
     cc = [];
-    scrollAmt = 0;
     loadCC(`${masterDiv}`);
   }
 }
@@ -178,6 +178,7 @@ function editCC(path, masterDiv, ccEntryIndex) {
   // Set the master container's innerHTML
   document.getElementById(masterDiv).innerHTML = headerHTML + fieldsHTML + footerHTML;
 }
+/*
 function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) {
   let updatedValues = [];
   
@@ -204,6 +205,7 @@ function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) 
   // Refresh the UI
   loadCC(masterDiv);
 }
+*/
 function removeCC(i, masterDiv) {
   document.getElementById(`logCC${i}`).remove();
   const logDiv = document.querySelector(`#${masterDiv} .logDiv`)
@@ -211,6 +213,7 @@ function removeCC(i, masterDiv) {
   ccHx[0].push(`r${i}`);
   ccHx[0].push(cc[i]);
   ccHx[0].push(logDiv.scrollTop);
+  scrollAmt = logDiv.scrollTop;
   ccReHx = [];
   cc.splice(i, 1);
   loadCC(masterDiv);
@@ -444,6 +447,7 @@ function saveCCUnified(index, prefix, masterDiv, elementType, arrayStr, containe
     ccHx[0].push(true);
     ccHx[0].push(saveCC);
     ccHx[0].push('max');
+    scrollAmt = 'max';
   } else {
     ccHx.unshift([]);
     ccHx[0].push(parseInt(index, 10));
@@ -451,7 +455,6 @@ function saveCCUnified(index, prefix, masterDiv, elementType, arrayStr, containe
     ccHx[0].push(scrollAmt);
     console.log(ccHx);
     cc[index]= saveCC;
-    scrollAmt = 0;
   }
   
   
