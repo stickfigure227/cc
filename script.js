@@ -150,7 +150,7 @@ function redo(i, masterDiv) {
 function editCC(path, masterDiv, ccEntryIndex) {
   // Log the scroll
   const logDiv = document.querySelector(`#${masterDiv} .logDiv`)
-  scrollAmt = logDiv === true ? logDiv.scrollTop : 'max';
+  scrollAmt = logDiv ? logDiv.scrollTop : 'max';
   
   // Parse the path to get indices array
   let indices = idGenerator(path);
