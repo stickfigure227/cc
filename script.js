@@ -7,6 +7,7 @@ window.onload = function() {
 let cc = [];
 let ccHx = [];
 let ccReHx = [];
+let scrollHeight = 0;
 
 /* Sample
 
