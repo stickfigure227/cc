@@ -7,7 +7,7 @@ window.onload = function() {
 let cc = [];
 let ccHx = [];
 let ccReHx = [];
-let scrollHeight = 0;
+let scrollAmt = 'max';
 
 /* Sample
 
@@ -80,7 +80,7 @@ function loadCC(masterDiv) {
   // Scrol to last
   const logDiv = document.querySelector(`#${masterDiv} .logDiv`);
   if (logDiv) {
-    logDiv.scrollTop = logDiv.scrollHeight;
+    logDiv.scrollTop = scrollAmt === 'max' ? logDiv.scrollHeight : scrollAmt;
   }
 }
  
@@ -89,8 +89,10 @@ function del(i, masterDiv) {
     ccHx.unshift([]);
     ccHx[0].push(null);
     ccHx[0].push(cc);
+    ccHx[0].push('max');
     ccReHx = [];
     cc = [];
+    scrollAmt = 0;
     loadCC(`${masterDiv}`);
   }
 }
@@ -104,7 +106,7 @@ function undo(i, masterDiv) {
       ccReHx.unshift(ccHx[0]);
     } else if (index === true) {
       // remove added new CC
-      ccReHx.unshift([`t${cc.indexOf(ccHx[0][1])}`, ccHx[0][1]]);
+      ccReHx.unshift([`t${cc.indexOf(ccHx[0][1])}`, ccHx[0][1], ccHx[0][2]]);
       cc.splice(cc.indexOf(ccHx[0][1]), 1);
     } else if (index[0] === "r") {
       // restore removed CC
@@ -115,6 +117,7 @@ function undo(i, masterDiv) {
       ccReHx.unshift([index, cc[index]]);
       cc[index] = ccHx[0][1];
     }
+    scrollAmt = ccHx[0][2];
     ccHx.shift();
     loadCC(masterDiv);
   }
@@ -129,7 +132,7 @@ function redo(i, masterDiv) {
     } else if (index[0] === "t") {
       // restore remove added new CC
       cc.splice(+index.slice(1), 0, ccReHx[0][1]);
-      ccHx.unshift([true, ccReHx[0][1]]);
+      ccHx.unshift([true, ccReHx[0][1], ccReHx[0][2]]);
     } else if (index[0] === "r") {
       // remove restore removed CC
       cc.splice(+index.slice(1), 1);
@@ -139,12 +142,16 @@ function redo(i, masterDiv) {
       ccHx.unshift([index, cc[index]]);
       cc[index] = ccReHx[0][1];
     }
+    scrollAmt = ccReHx[0][2];
     ccReHx.shift();
     loadCC(masterDiv);
   }
 }
 function editCC(path, masterDiv, ccEntryIndex) {
-  console.log(cc);
+  // Log the scroll
+  const logDiv = document.querySelector(`#${masterDiv} .logDiv`)
+  scrollAmt = logDiv === true ? logDiv.scrollTop : 'max';
+  
   // Parse the path to get indices array
   let indices = idGenerator(path);
   console.log
@@ -199,12 +206,13 @@ function updateCCUnified(i, categoryIndex, masterDiv, elementType, fieldsArray) 
 }
 function removeCC(i, masterDiv) {
   document.getElementById(`logCC${i}`).remove();
+  const logDiv = document.querySelector(`#${masterDiv} .logDiv`)
   ccHx.unshift([]);
   ccHx[0].push(`r${i}`);
   ccHx[0].push(cc[i]);
+  ccHx[0].push(logDiv.scrollTop);
   ccReHx = [];
   cc.splice(i, 1);
-  console.log(ccHx);
   loadCC(masterDiv);
 }
 
@@ -435,12 +443,15 @@ function saveCCUnified(index, prefix, masterDiv, elementType, arrayStr, containe
     ccHx.unshift([]);
     ccHx[0].push(true);
     ccHx[0].push(saveCC);
+    ccHx[0].push('max');
   } else {
     ccHx.unshift([]);
     ccHx[0].push(parseInt(index, 10));
     ccHx[0].push(cc[index]);
+    ccHx[0].push(scrollAmt);
     console.log(ccHx);
     cc[index]= saveCC;
+    scrollAmt = 0;
   }
   
   
